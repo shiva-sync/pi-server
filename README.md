@@ -1,4 +1,4 @@
-# FC Sync Pi Server
+# FC Sync shiva-server
 
 Go-based server application for Raspberry Pi deployment.
 

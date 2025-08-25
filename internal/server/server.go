@@ -117,7 +117,9 @@ func (s *Server) setupRoutes() {
 
 	// Health endpoints
 	s.router.GET("/healthz", s.handleHealth)
+	s.router.HEAD("/healthz", s.handleHealth)
 	s.router.GET("/readyz", s.handleReadiness)
+	s.router.HEAD("/readyz", s.handleReadiness)
 
 	// OAuth endpoints (Stage 2)
 	oauth := s.router.Group("/oauth")
