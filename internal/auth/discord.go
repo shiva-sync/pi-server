@@ -66,9 +66,10 @@ func (d *DiscordClient) GetUser(ctx context.Context, token *oauth2.Token) (*Disc
 	return &user, nil
 }
 
-// GetGuildMember fetches guild member information from Discord
+// GetGuildMember fetches guild member information from Discord using user endpoint
 func (d *DiscordClient) GetGuildMember(ctx context.Context, token *oauth2.Token, guildID, userID string) (*DiscordGuildMember, error) {
-	url := fmt.Sprintf("https://discord.com/api/guilds/%s/members/%s", guildID, userID)
+	// Use user endpoint to get own guild membership
+	url := fmt.Sprintf("https://discord.com/api/users/@me/guilds/%s/member", guildID)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
