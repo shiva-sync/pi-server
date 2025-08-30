@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 )
@@ -115,6 +117,19 @@ func (d *DiscordClient) GetGuildMemberWithBot(ctx context.Context, guildID, user
 
 	req.Header.Set("Authorization", "Bot "+d.botToken)
 
+	// Log to file for debugging
+	logToFile := func(message string) {
+		f, err := os.OpenFile("/tmp/discord_debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err == nil {
+			defer f.Close()
+			f.WriteString(fmt.Sprintf("[%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), message))
+		}
+	}
+
+	logToFile(fmt.Sprintf("Making Discord API request - URL: %s", url))
+	logToFile(fmt.Sprintf("Guild ID: %s, User ID: %s", guildID, userID))
+	logToFile(fmt.Sprintf("Bot token prefix: %s", d.botToken[:10]+"***"))
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -127,7 +142,10 @@ func (d *DiscordClient) GetGuildMemberWithBot(ctx context.Context, guildID, user
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Discord API error: %d %s", resp.StatusCode, string(body))
+		logToFile(fmt.Sprintf("Discord API ERROR - Status: %d, Body: %s", resp.StatusCode, string(body)))
+		// Enhanced error with request details for debugging
+		return nil, fmt.Errorf("Discord API error: %d %s (URL: %s, Guild: %s, User: %s, Token prefix: %s)",
+			resp.StatusCode, string(body), url, guildID, userID, d.botToken[:10]+"***")
 	}
 
 	var member DiscordGuildMember
