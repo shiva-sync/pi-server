@@ -35,6 +35,17 @@ type DiscordClient struct {
 
 // NewDiscordClient creates a new Discord client
 func NewDiscordClient(oauthConfig *oauth2.Config, botToken string) *DiscordClient {
+	// Log to file for debugging - test that logging works
+	logToFile := func(message string) {
+		f, err := os.OpenFile("/tmp/discord_debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err == nil {
+			defer f.Close()
+			f.WriteString(fmt.Sprintf("[%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), message))
+		}
+	}
+
+	logToFile(fmt.Sprintf("NewDiscordClient created with bot token prefix: %s", botToken[:10]+"***"))
+
 	return &DiscordClient{
 		oauthConfig: oauthConfig,
 		httpClient:  &http.Client{},
@@ -177,8 +188,20 @@ func (d *DiscordClient) HasRole(ctx context.Context, token *oauth2.Token, guildI
 
 // HasRoleWithBot checks if a user has a specific role in a guild using bot token
 func (d *DiscordClient) HasRoleWithBot(ctx context.Context, guildID, userID, requiredRoleID string) (bool, []string, error) {
+	// Log to file for debugging
+	logToFile := func(message string) {
+		f, err := os.OpenFile("/tmp/discord_debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err == nil {
+			defer f.Close()
+			f.WriteString(fmt.Sprintf("[%s] %s\n", time.Now().Format("2006-01-02 15:04:05"), message))
+		}
+	}
+
+	logToFile(fmt.Sprintf("HasRoleWithBot called - Guild: %s, User: %s, RequiredRole: %s", guildID, userID, requiredRoleID))
+
 	member, err := d.GetGuildMemberWithBot(ctx, guildID, userID)
 	if err != nil {
+		logToFile(fmt.Sprintf("GetGuildMemberWithBot failed: %s", err.Error()))
 		return false, nil, err
 	}
 
