@@ -58,7 +58,7 @@ func New(cfg *config.Config, logger *zap.Logger) (*Server, error) {
 		ClientID:     cfg.DiscordClientID,
 		ClientSecret: cfg.DiscordClientSecret,
 		RedirectURL:  cfg.DiscordRedirectURI,
-		Scopes:       []string{"identify", "guilds"},
+		Scopes:       []string{"identify", "bot"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://discord.com/api/oauth2/authorize",
 			TokenURL: "https://discord.com/api/oauth2/token",
@@ -76,7 +76,7 @@ func New(cfg *config.Config, logger *zap.Logger) (*Server, error) {
 	jwtManager := auth.NewJWTManager(cfg.JWTSigningKey)
 
 	// Initialize Discord client
-	discordClient := auth.NewDiscordClient(oauthCfg)
+	discordClient := auth.NewDiscordClient(oauthCfg, cfg.DiscordBotToken)
 
 	// Initialize crypto key manager
 	keyManager := crypto.NewKeyManager()
@@ -249,8 +249,8 @@ func (s *Server) handleOAuthLogin(c *gin.Context) {
 	// Store state in session/cookie for validation (simplified for now)
 	c.SetCookie("oauth_state", stateString, 600, "/", "", true, true)
 
-	// Redirect to Discord
-	url := s.oauthCfg.AuthCodeURL(stateString, oauth2.AccessTypeOffline)
+	// Redirect to Discord with bot permissions
+	url := s.oauthCfg.AuthCodeURL(stateString, oauth2.AccessTypeOffline, oauth2.SetAuthURLParam("permissions", "67108864"))
 	c.Redirect(http.StatusFound, url)
 }
 
@@ -295,7 +295,7 @@ func (s *Server) handleOAuthCallback(c *gin.Context) {
 	}
 
 	// Check if user has required role in guild
-	hasRole, roles, err := s.discordClient.HasRole(ctx, token, s.config.DiscordGuildID, user.ID, s.config.DiscordRequiredRoleID)
+	hasRole, roles, err := s.discordClient.HasRoleWithBot(ctx, s.config.DiscordGuildID, user.ID, s.config.DiscordRequiredRoleID)
 	if err != nil {
 		s.logger.Error("Failed to check user roles", zap.Error(err), zap.String("user_id", user.ID))
 		c.JSON(http.StatusForbidden, gin.H{"error": "failed to verify guild membership"})
@@ -381,7 +381,7 @@ func (s *Server) handleAuthRefresh(c *gin.Context) {
 	}
 
 	// Check roles again
-	hasRole, roles, err := s.discordClient.HasRole(ctx, newToken, s.config.DiscordGuildID, user.ID, s.config.DiscordRequiredRoleID)
+	hasRole, roles, err := s.discordClient.HasRoleWithBot(ctx, s.config.DiscordGuildID, user.ID, s.config.DiscordRequiredRoleID)
 	if err != nil {
 		s.logger.Error("Failed to check user roles on refresh", zap.Error(err))
 		c.JSON(http.StatusForbidden, gin.H{"error": "failed to verify guild membership"})

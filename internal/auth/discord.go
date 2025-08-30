@@ -28,13 +28,15 @@ type DiscordGuildMember struct {
 type DiscordClient struct {
 	oauthConfig *oauth2.Config
 	httpClient  *http.Client
+	botToken    string
 }
 
 // NewDiscordClient creates a new Discord client
-func NewDiscordClient(oauthConfig *oauth2.Config) *DiscordClient {
+func NewDiscordClient(oauthConfig *oauth2.Config, botToken string) *DiscordClient {
 	return &DiscordClient{
 		oauthConfig: oauthConfig,
 		httpClient:  &http.Client{},
+		botToken:    botToken,
 	}
 }
 
@@ -66,7 +68,7 @@ func (d *DiscordClient) GetUser(ctx context.Context, token *oauth2.Token) (*Disc
 	return &user, nil
 }
 
-// GetGuildMember fetches guild member information from Discord
+// GetGuildMember fetches guild member information from Discord using OAuth token
 func (d *DiscordClient) GetGuildMember(ctx context.Context, token *oauth2.Token, guildID, userID string) (*DiscordGuildMember, error) {
 	url := fmt.Sprintf("https://discord.com/api/guilds/%s/members/%s", guildID, userID)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -99,9 +101,61 @@ func (d *DiscordClient) GetGuildMember(ctx context.Context, token *oauth2.Token,
 	return &member, nil
 }
 
-// HasRole checks if a user has a specific role in a guild
+// GetGuildMemberWithBot fetches guild member information from Discord using bot token
+func (d *DiscordClient) GetGuildMemberWithBot(ctx context.Context, guildID, userID string) (*DiscordGuildMember, error) {
+	url := fmt.Sprintf("https://discord.com/api/guilds/%s/members/%s", guildID, userID)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bot "+d.botToken)
+	
+	resp, err := d.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("user not found in guild")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Discord API error: %d %s", resp.StatusCode, string(body))
+	}
+
+	var member DiscordGuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, err
+	}
+
+	return &member, nil
+}
+
+// HasRole checks if a user has a specific role in a guild using OAuth token
 func (d *DiscordClient) HasRole(ctx context.Context, token *oauth2.Token, guildID, userID, requiredRoleID string) (bool, []string, error) {
 	member, err := d.GetGuildMember(ctx, token, guildID, userID)
+	if err != nil {
+		return false, nil, err
+	}
+
+	// Check if user has the required role
+	hasRole := false
+	for _, roleID := range member.Roles {
+		if roleID == requiredRoleID {
+			hasRole = true
+			break
+		}
+	}
+
+	return hasRole, member.Roles, nil
+}
+
+// HasRoleWithBot checks if a user has a specific role in a guild using bot token
+func (d *DiscordClient) HasRoleWithBot(ctx context.Context, guildID, userID, requiredRoleID string) (bool, []string, error) {
+	member, err := d.GetGuildMemberWithBot(ctx, guildID, userID)
 	if err != nil {
 		return false, nil, err
 	}

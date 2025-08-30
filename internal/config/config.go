@@ -29,6 +29,7 @@ type Config struct {
 	DiscordRedirectURI    string `json:"discord_redirect_uri"`
 	DiscordGuildID        string `json:"discord_guild_id"`
 	DiscordRequiredRoleID string `json:"discord_required_role_id"`
+	DiscordBotToken       string `json:"discord_bot_token"`
 
 	// JWT
 	JWTSigningKey []byte `json:"-"`
@@ -71,6 +72,7 @@ func Load() (*Config, error) {
 		DiscordRedirectURI:    getEnvString("DISCORD_REDIRECT_URI", ""),
 		DiscordGuildID:        getEnvString("DISCORD_GUILD_ID", ""),
 		DiscordRequiredRoleID: getEnvString("DISCORD_REQUIRED_ROLE_ID", ""),
+		DiscordBotToken:       getEnvString("DISCORD_BOT_TOKEN", ""),
 
 		AdminUsername:     getEnvString("ADMIN_USERNAME", "admin"),
 		AdminPasswordHash: getEnvString("ADMIN_PASSWORD_HASH", ""),
@@ -130,6 +132,7 @@ func (c *Config) validate() error {
 		"DISCORD_REDIRECT_URI":       c.DiscordRedirectURI,
 		"DISCORD_GUILD_ID":           c.DiscordGuildID,
 		"DISCORD_REQUIRED_ROLE_ID":   c.DiscordRequiredRoleID,
+		"DISCORD_BOT_TOKEN":          c.DiscordBotToken,
 	}
 
 	for key, value := range required {
