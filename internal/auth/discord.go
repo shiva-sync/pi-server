@@ -48,7 +48,7 @@ func (d *DiscordClient) GetUser(ctx context.Context, token *oauth2.Token) (*Disc
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (d *DiscordClient) GetGuildMember(ctx context.Context, token *oauth2.Token,
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -103,6 +103,10 @@ func (d *DiscordClient) GetGuildMember(ctx context.Context, token *oauth2.Token,
 
 // GetGuildMemberWithBot fetches guild member information from Discord using bot token
 func (d *DiscordClient) GetGuildMemberWithBot(ctx context.Context, guildID, userID string) (*DiscordGuildMember, error) {
+	if d.botToken == "" {
+		return nil, fmt.Errorf("bot token is empty")
+	}
+
 	url := fmt.Sprintf("https://discord.com/api/guilds/%s/members/%s", guildID, userID)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -110,7 +114,7 @@ func (d *DiscordClient) GetGuildMemberWithBot(ctx context.Context, guildID, user
 	}
 
 	req.Header.Set("Authorization", "Bot "+d.botToken)
-	
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -180,7 +184,7 @@ func (d *DiscordClient) ValidateDiscordToken(ctx context.Context, token *oauth2.
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	
+
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		return err

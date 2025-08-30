@@ -295,6 +295,12 @@ func (s *Server) handleOAuthCallback(c *gin.Context) {
 	}
 
 	// Check if user has required role in guild
+	s.logger.Info("Checking user roles with bot token",
+		zap.String("user_id", user.ID),
+		zap.String("guild_id", s.config.DiscordGuildID),
+		zap.String("required_role_id", s.config.DiscordRequiredRoleID),
+		zap.Bool("bot_token_set", s.config.DiscordBotToken != ""))
+
 	hasRole, roles, err := s.discordClient.HasRoleWithBot(ctx, s.config.DiscordGuildID, user.ID, s.config.DiscordRequiredRoleID)
 	if err != nil {
 		s.logger.Error("Failed to check user roles", zap.Error(err), zap.String("user_id", user.ID))
@@ -324,8 +330,8 @@ func (s *Server) handleOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	s.logger.Info("User authenticated successfully", 
-		zap.String("user_id", user.ID), 
+	s.logger.Info("User authenticated successfully",
+		zap.String("user_id", user.ID),
 		zap.String("username", user.GetDisplayName()),
 		zap.Int("roles_count", len(roles)))
 
@@ -412,7 +418,7 @@ func (s *Server) handleAuthRefresh(c *gin.Context) {
 // Object existence check endpoint
 func (s *Server) handleObjectExists(c *gin.Context) {
 	sha256Hash := c.Param("sha256")
-	
+
 	// Validate SHA256 format
 	if err := models.ValidateSHA256(sha256Hash); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -487,8 +493,8 @@ func (s *Server) handlePresignPut(c *gin.Context) {
 		ExpiresIn: 600, // 10 minutes
 	}
 
-	s.logger.Info("Generated presigned PUT URL", 
-		zap.String("sha256", req.SHA256), 
+	s.logger.Info("Generated presigned PUT URL",
+		zap.String("sha256", req.SHA256),
 		zap.Int64("size", req.Size),
 		zap.String("user_id", c.GetString("user_id")))
 
@@ -532,7 +538,7 @@ func (s *Server) handlePresignGet(c *gin.Context) {
 		ExpiresIn: 600, // 10 minutes
 	}
 
-	s.logger.Info("Generated presigned GET URL", 
+	s.logger.Info("Generated presigned GET URL",
 		zap.String("sha256", req.SHA256),
 		zap.String("user_id", c.GetString("user_id")))
 
@@ -542,7 +548,7 @@ func (s *Server) handlePresignGet(c *gin.Context) {
 // Object metadata endpoint
 func (s *Server) handleObjectMetadata(c *gin.Context) {
 	sha256Hash := c.Param("sha256")
-	
+
 	// Validate SHA256 format
 	if err := models.ValidateSHA256(sha256Hash); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -580,7 +586,7 @@ func (s *Server) handleObjectMetadata(c *gin.Context) {
 			return
 		}
 
-		s.logger.Info("Stored object metadata", 
+		s.logger.Info("Stored object metadata",
 			zap.String("sha256", sha256Hash),
 			zap.String("uploader", meta.Uploader),
 			zap.String("licence", meta.Licence))
@@ -615,7 +621,7 @@ type RegisterKeyRequest struct {
 	PublicKey string `json:"public_key" binding:"required"`
 }
 
-// GroupKeyResponse represents a wrapped group key response  
+// GroupKeyResponse represents a wrapped group key response
 type GroupKeyResponse struct {
 	EncryptedKey string `json:"encrypted_key"`
 	Algorithm    string `json:"algorithm"`
